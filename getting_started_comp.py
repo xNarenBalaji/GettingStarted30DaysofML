@@ -28,6 +28,8 @@ from sklearn.impute import SimpleImputer
 
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
+
+from xgboost import XGBRegressor
 # =============================================================================
 # Reading Data
 # =============================================================================
@@ -35,7 +37,7 @@ from sklearn.metrics import mean_squared_error
 pathlocation = 'Not Chosen'
 pathlocation = input("Location of dataset (home or away): ")
 if pathlocation.lower() == 'home':
-    base_path = ""
+    base_path = "C:\\Users\\NarenBalaji\\JB\\ML\\Kaggle\\GettingStarted30DaysofML"
 elif pathlocation.lower() == 'away':
     base_path ="D:\\Naren Balaji\\External Data\\Kaggle\\ml_30days"
 else:
@@ -103,16 +105,75 @@ preprocessor = ColumnTransformer(
         ('cat', categorical_transformer, object_cols)
     ])
 
-model = RandomForestRegressor(n_estimators=100, random_state=1)
+def model_choice(i,n_estimators=10):
+    
+    now = datetime.now()
+    current_time = now.strftime("%H:%M:%S")
+    print("Current Time =", current_time)
+    
+    if i == 1:
+        model = RandomForestRegressor(n_estimators=100, random_state=1)
+        my_pipeline = Pipeline(steps=[('preprocessor',preprocessor),
+                                      ('model',model)])
+        scores = -1 * cross_val_score(my_pipeline, features, y, 
+                                      cv=5, n_jobs = -1, 
+                                      scoring='neg_root_mean_squared_error')
+    
+    elif i == 2:
+        model = XGBRegressor(n_estimators=n_estimators,random_state=1,
+                             early_stopping_rounds=10)
+        my_pipeline = Pipeline(steps=[('preprocessor',preprocessor),
+                                      ('model',model)])
+        scores = -1 * cross_val_score(my_pipeline, features, y, 
+                                      cv=5, n_jobs = -1,
+                                      scoring='neg_root_mean_squared_error')
+    else:
+        model = RandomForestRegressor(n_estimators=50, random_state=1)
+        my_pipeline = Pipeline(steps=[('preprocessor',preprocessor),
+                                      ('model',model)])
+        scores = -1 * cross_val_score(my_pipeline, features, y, 
+                                      cv=5, n_jobs = -1, 
+                                      scoring='neg_root_mean_squared_error')
+    
+    now = datetime.now()
+    current_time = now.strftime("%H:%M:%S")
+    print("Current Time =", current_time)
+    
+    print(scores.mean())
+    return scores.mean()
 
-my_pipeline = Pipeline(steps=[('preprocessor',preprocessor),('model',model)])
+# =============================================================================
+# Training model
+# =============================================================================
+model_choice(2,200)
 
-print('reached here')
-scores = -1 * cross_val_score(my_pipeline, features, y, cv=5, 
-                              scoring='neg_root_mean_squared_error')
+model = XGBRegressor(n_estimators=200,random_state=1,
+                     early_stopping_rounds=10)
+model.fit(features,y)
 
-print(scores)
+# =============================================================================
+# numerical_transformer = SimpleImputer(strategy='mean')
+# 
+# categorical_transformer = Pipeline(steps=[
+#     ('imputer', SimpleImputer(strategy='most_frequent')),
+#     ('onehot', OneHotEncoder(handle_unknown='ignore'))
+# ])
+# 
+# preprocessor = ColumnTransformer(
+#     transformers=[
+#         ('num', numerical_transformer, numeric_cols),
+#         ('cat', categorical_transformer, object_cols)
+#     ])
+# my_pipeline = Pipeline(steps=[('preprocessor',preprocessor)])
+#                       
+#                        
+# =============================================================================
 
-now = datetime.now()
-current_time = now.strftime("%H:%M:%S")
-print("Current Time =", current_time)
+# Use the model to generate predictions
+predictions = model.predict(test)
+
+# Save the predictions to a CSV file
+output = pd.DataFrame({'Id': test.index,
+                       'target': predictions})
+output.to_csv('submission.csv', index=False)
+    
