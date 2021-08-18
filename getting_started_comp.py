@@ -112,7 +112,8 @@ def ModelChoice(choice=0):
     if choice==1:
         print("do what?")
     else:
-        model = XGBRegressor(n_estimators=200,random_state=1)
+        model = XGBRegressor(n_estimators=10000,
+                             learning_rate = 0.25, random_state=1)
         
     return model
 # =============================================================================
